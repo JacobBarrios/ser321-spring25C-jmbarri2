@@ -62,7 +62,7 @@ class WebServer {
           server.close();
         } catch (IOException e) {
           // TODO Auto-generated catch block
-          e.printStackTrace();
+          System.err.println("Error closing server socket: " + e.getMessage());
         }
       }
     }
