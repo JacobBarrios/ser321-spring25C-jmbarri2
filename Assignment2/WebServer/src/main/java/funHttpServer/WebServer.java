@@ -217,41 +217,13 @@ class WebServer {
           //  a response that makes sense
           
           // Extract query parameters for num1 and num2
-          query_pairs = splitQuery(request.replace("multiply?", ""));
-          
-          // Initialize num1 and num2 with default values (if needed)
-          String num1Str = query_pairs.get("num1");
-          String num2Str = query_pairs.get("num2");
-          
-          if (num1Str == null || num2Str == null) {
+          if (num1 == null || num2 == null) {
             // Missing parameters
             builder.append("HTTP/1.1 400 Bad Request\n");
             builder.append("Content-Type: text/html; charset=utf-8\n");
             builder.append("\n");
             builder.append("Error: Missing 'num1' or 'num2' parameters. Please provide both.");
-          } else {
-            try {
-              // Try parsing both parameters as integers
-              num1 = Integer.parseInt(num1Str);
-              num2 = Integer.parseInt(num2Str);
-              
-              // Perform multiplication
-              result = num1 * num2;
-              
-              // Generate successful response
-              builder.append("HTTP/1.1 200 OK\n");
-              builder.append("Content-Type: text/html; charset=utf-8\n");
-              builder.append("\n");
-              builder.append("Result is: " + result);
-            } catch (NumberFormatException e) {
-              // Handle invalid parameter format (non-integer input)
-              builder.append("HTTP/1.1 406 Not Acceptable\n");
-              builder.append("Content-Type: text/html; charset=utf-8\n");
-              builder.append("\n");
-              builder.append("Error: Invalid input. Both 'num1' and 'num2' must be integers.");
-            }
           }
-
         } else if (request.contains("github?")) {
           // pulls the query from the request and runs it with GitHub's REST API
           // check out https://docs.github.com/rest/reference/
@@ -273,13 +245,6 @@ class WebServer {
           // TODO: Parse the JSON returned by your fetch and create an appropriate
           //  response based on what the assignment document asks for
           
-          // Pull the query parameter for the GitHub API request
-          query_pairs = splitQuery(request.replace("github?", ""));
-          String query = query_pairs.get("query");
-          
-          // Fetch JSON data from the GitHub API
-          json = fetchURL("https://api.github.com/" + query);
-          
           // Parse the JSON response (this requires a simple JSON parsing method)
           try {
             // Simple parsing of GitHub repos. You can use a library like org.json or Gson for more complex parsing
@@ -292,13 +257,6 @@ class WebServer {
                 repoNames.append("<li>").append(repoName).append("</li>");
               }
             }
-            
-            // Generate response with list of repositories
-            builder.append("HTTP/1.1 200 OK\n");
-            builder.append("Content-Type: text/html; charset=utf-8\n");
-            builder.append("\n");
-            builder.append("<h1>Repositories</h1>");
-            builder.append("<ul>").append(repoNames).append("</ul>");
             
           } catch (Exception e) {
             // If parsing fails or if GitHub API call fails, return an error
