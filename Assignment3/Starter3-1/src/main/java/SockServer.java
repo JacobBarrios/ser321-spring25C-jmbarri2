@@ -203,8 +203,11 @@ public class SockServer {
     }
     
     if(task.equals("view")){
-      // do nothing, skip to the end and return list
-        
+      String inventoryList = buildList();
+      res.put("inventory", inventoryList);
+      
+      return res;
+      
     }
     else if(task.equals("add")){
       if(inventory.length() == 0) {
@@ -233,7 +236,7 @@ public class SockServer {
         }
       }
     }
-    else if(task.equals("buy")){
+    else if(task.equals("buy")) {
       String buyProduct = req.getString("productName");
       int takeAway = req.getInt("quantity");
       
