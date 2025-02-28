@@ -294,6 +294,7 @@ public class SockServer {
   static JSONObject charCount(JSONObject req) {
     System.out.println("charcount request: " + req.toString());
     JSONObject res = testField(req, "count");
+    res.put("type", "charcount");
     
     if (res.getBoolean("ok")) {
       if (!req.get("count").getClass().getName().equals("java.lang.String")) {
