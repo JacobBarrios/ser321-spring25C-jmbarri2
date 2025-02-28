@@ -15,9 +15,12 @@ public class SockServer {
   static ObjectInputStream in;
 
   static int port = 8888;
+  
+  static JSONArray inventory;
 
   public static void main (String args[]) {
-
+    inventory = new JSONArray();
+    
     if (args.length != 1) {
       System.out.println("Expected arguments: <port(int)>");
       System.exit(1);
@@ -88,7 +91,16 @@ public class SockServer {
             res = add(req);
           } else if (req.getString("type").equals("addmany")) {
             res = addmany(req);
-          } else {
+          }
+          else if(req.getString("type").equals("charcount")) {
+            res = charCount(req);
+            
+          }
+          else if(req.getString("type").equals("inventory")) {
+            res = inventory(req);
+          
+          }
+          else {
             res = wrongType(req);
           }
           writeOut(res);
@@ -163,12 +175,153 @@ public class SockServer {
 
   // implement me in assignment 3
   static JSONObject inventory(JSONObject req) {
-    return new JSONObject();
+    System.out.println("inventory request: " + req.toString());
+    JSONObject res = testField(req, "task");
+    res.put("type", "inventory");
+    
+    if(!res.getBoolean("ok")) {
+      return res;
+    }
+    
+    String task = req.getString("task");
+    
+    
+    if(!req.get("productName").getClass().getName().equals("java.lang.String")) {
+      res.put("ok", false);
+      res.put("message", "Field product name needs to be of type: String");
+        
+      return res;
+        
+    }
+      
+    if(!(req.get("quantity").getClass().getName().equals("java.lang.Integer"))) {
+      res.put("ok", false);
+      res.put("message", "Field quantity needs to be of type: int");
+        
+      return res;
+      
+    }
+    
+    if(task.equals("view")){
+      // do nothing, skip to the end and return list
+        
+    }
+    else if(task.equals("add")){
+      if(inventory.length() == 0) {
+        JSONObject product = new JSONObject();
+        product.put("Name", req.getString("productName"));
+        product.put("Quantity", req.getString("quantity"));
+        
+        inventory.put(product);
+        
+      }
+      else {
+        String newProductName = req.getString("productName");
+        int newQuantity = req.getInt("quantity");
+        
+        for(int i = 0; i < inventory.length(); i++) {
+          JSONObject product = inventory.getJSONObject(i);
+          
+          if(product.getString("Name").equals(newProductName)) {
+            int totalQuantity = product.getInt("Quantity") + newQuantity;
+            
+            inventory.getJSONObject(i).put("Quantity", totalQuantity);
+            
+            break;
+            
+          }
+        }
+      }
+    }
+    else if(task.equals("buy")){
+      String buyProduct = req.getString("productName");
+      int takeAway = req.getInt("quantity");
+      
+      for(int i = 0; i < inventory.length(); i++) {
+        JSONObject product = inventory.getJSONObject(i);
+        
+        if(product.getString("Name").equals(buyProduct)) {
+          if(product.getInt("Quantity") >= takeAway) {
+            int totalQuantity = product.getInt("Quantity") - takeAway;
+            inventory.getJSONObject(i).put("Quantity", totalQuantity);
+            
+            break;
+
+          }
+          else {
+            res.put("ok", false);
+            res.put("message", "Product " + buyProduct + " not available in quantity " + takeAway);
+            
+            return res;
+            
+          }
+          
+        }
+        else {
+          res.put("ok", false);
+          res.put("message", "Product " + buyProduct + " not in inventory");
+          
+          return res;
+          
+        }
+      }
+    }
+    
+    String inventoryList = buildList();
+    res.put("inventory", inventoryList);
+    
+    return res;
+    
+  }
+  
+  // Helper method to build list of inventory for inventory method
+  static String buildList() {
+    StringBuilder productListBuilder = new StringBuilder();
+    for(int i = 0; i < inventory.length() - 1; i++) {
+      JSONObject product = inventory.getJSONObject(i);
+      
+      productListBuilder.append(product.toString()).append(", ");
+      
+    }
+    JSONObject lastProduct = inventory.getJSONObject(inventory.length() - 1);
+    productListBuilder.append(lastProduct.toString());
+    
+    return productListBuilder.toString();
+    
   }
 
   // implement me in assignment 3
   static JSONObject charCount(JSONObject req) {
-    return new JSONObject();
+    System.out.println("charcount request: " + req.toString());
+    JSONObject res = testField(req, "count");
+    
+    if (res.getBoolean("ok")) {
+      if (!req.get("count").getClass().getName().equals("java.lang.String")) {
+        res.put("ok", false);
+        res.put("message", "Field count needs to be of type: String");
+        
+        return res;
+      
+      }
+      
+      String charCount = req.getString("count");
+      
+      if (req.getBoolean("findchar")) {
+        char findChar = req.getString("find").charAt(0);  // The character to search for
+        int count = 0;
+        
+        for (int i = 0; i < charCount.length(); i++) {
+          if (charCount.charAt(i) == findChar) {
+            count++;
+          }
+        }
+        res.put("result", count);
+      }
+      else { res.put("result", charCount.length()); }
+    }
+    
+    return res;
+    
   }
 
   // handles the simple addmany request

@@ -78,15 +78,16 @@ class SockClient {
           case 4:
             json.put("type", "charcount");
             
-            System.out.println("Choose charCount, enter a string:");
+            System.out.println("Choose charcount, enter a string:");
             String stringCount = scanner.nextLine();
             
             System.out.println("Do you want to count a certain char? 1 - yes, 0 - no");
             int charChoice = scanner.nextInt();
+            scanner.nextLine();
             
             if(charChoice == 1) {
               System.out.println("Which character do you want to search for?");
-              char character = scanner.next().charAt(0);
+              String character = scanner.nextLine();
               
               json.put("findchar", true);
               json.put("find", character);
@@ -98,24 +99,30 @@ class SockClient {
             }
             
             json.put("count", stringCount);
-          
+            
+            break;
+            
           case 5:
             json.put("type", "inventory");
             
-            System.out.println("Choose inventory, enter task you want to do: - add, - view, - buy");
+            System.out.println("Choose inventory, enter task you want to do: - add, - view, - buy - quit");
             String task = scanner.nextLine();
             json.put("task", task);
             
             if(!task.equals("view")) {
               System.out.println("Enter a product name;");
               String product = scanner.nextLine();
-              json.put("Name", product);
+              json.put("productName", product);
               
               System.out.println("Enter amount:");
               int quantity = scanner.nextInt();
+              scanner.nextLine();
               json.put("quantity", quantity);
               
             }
+            
+            break;
+            
         }
         if(!requesting) {
           continue;
