@@ -107,7 +107,7 @@ class SockClient {
             
             json.put("type", "inventory");
             
-            System.out.println("Choose inventory, enter task you want to do: - add, - view, - buy - quit");
+            System.out.println("Choose inventory, enter task you want to do: - add, - view, - buy");
             String task = scanner.nextLine();
             
             if(task.equals("quit")) {
