@@ -185,23 +185,6 @@ public class SockServer {
     
     String task = req.getString("task");
     
-    
-    if(!req.get("productName").getClass().getName().equals("java.lang.String")) {
-      res.put("ok", false);
-      res.put("message", "Field product name needs to be of type: String");
-        
-      return res;
-        
-    }
-      
-    if(!(req.get("quantity").getClass().getName().equals("java.lang.Integer"))) {
-      res.put("ok", false);
-      res.put("message", "Field quantity needs to be of type: int");
-        
-      return res;
-      
-    }
-    
     if(task.equals("view")){
       String inventoryList = buildList();
       res.put("inventory", inventoryList);
@@ -210,15 +193,32 @@ public class SockServer {
       
     }
     else if(task.equals("add")){
+      if(!(req.get("productName") instanceof String)) {
+        res.put("ok", false);
+        res.put("message", "Field product name needs to be of type: String");
+        
+        return res;
+        
+      }
+      
+      if(!(req.get("quantity").getClass().getName().equals("java.lang.Integer"))) {
+        res.put("ok", false);
+        res.put("message", "Field quantity needs to be of type: int");
+        
+        return res;
+        
+      }
+      
       if(inventory.length() == 0) {
         JSONObject product = new JSONObject();
         product.put("Name", req.getString("productName"));
-        product.put("Quantity", req.getString("quantity"));
+        product.put("Quantity", req.getInt("quantity"));
         
         inventory.put(product);
         
       }
       else {
+        boolean found = false;
         String newProductName = req.getString("productName");
         int newQuantity = req.getInt("quantity");
         
@@ -230,13 +230,39 @@ public class SockServer {
             
             inventory.getJSONObject(i).put("Quantity", totalQuantity);
             
+            found = true;
+            
             break;
             
           }
         }
+        if (!found) {
+          JSONObject newProduct = new JSONObject();
+          newProduct.put("Name", newProductName);
+          newProduct.put("Quantity", newQuantity);
+          inventory.put(newProduct);
+          
+        }
       }
     }
     else if(task.equals("buy")) {
+      if(!(req.get("productName") instanceof String)) {
+        res.put("ok", false);
+        res.put("message", "Field product name needs to be of type: String");
+        
+        return res;
+        
+      }
+      
+      if(!(req.get("quantity").getClass().getName().equals("java.lang.Integer"))) {
+        res.put("ok", false);
+        res.put("message", "Field quantity needs to be of type: int");
+        
+        return res;
+        
+      }
+      
+      boolean found = false;
       String buyProduct = req.getString("productName");
       int takeAway = req.getInt("quantity");
       
@@ -244,6 +270,8 @@ public class SockServer {
         JSONObject product = inventory.getJSONObject(i);
         
         if(product.getString("Name").equals(buyProduct)) {
+          found = true;
+          
           if(product.getInt("Quantity") >= takeAway) {
             int totalQuantity = product.getInt("Quantity") - takeAway;
             inventory.getJSONObject(i).put("Quantity", totalQuantity);
@@ -260,13 +288,13 @@ public class SockServer {
           }
           
         }
-        else {
-          res.put("ok", false);
-          res.put("message", "Product " + buyProduct + " not in inventory");
-          
-          return res;
-          
-        }
+      }
+      if(!found) {
+        res.put("ok", false);
+        res.put("message", "Product " + buyProduct + " not in inventory");
+        
+        return res;
+        
       }
     }
     
@@ -280,14 +308,22 @@ public class SockServer {
   // Helper method to build list of inventory for inventory method
   static String buildList() {
     StringBuilder productListBuilder = new StringBuilder();
-    for(int i = 0; i < inventory.length() - 1; i++) {
-      JSONObject product = inventory.getJSONObject(i);
+    if(inventory.length() == 0 || inventory == null) {
       
-      productListBuilder.append(product.toString()).append(", ");
+      return "";
       
     }
-    JSONObject lastProduct = inventory.getJSONObject(inventory.length() - 1);
-    productListBuilder.append(lastProduct.toString());
+    for(int i = 0; i < inventory.length(); i++) {
+      JSONObject product = inventory.getJSONObject(i);
+      
+      productListBuilder.append(product.getString("Name"))
+              .append(", ")
+              .append(product.getInt("Quantity"));
+      
+      if(i < inventory.length() - 1) {
+        productListBuilder.append(", ");
+      }
+    }
     
     return productListBuilder.toString();
     

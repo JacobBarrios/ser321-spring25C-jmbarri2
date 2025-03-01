@@ -103,10 +103,18 @@ class SockClient {
             break;
             
           case 5:
+            boolean staying = true;
+            
             json.put("type", "inventory");
             
             System.out.println("Choose inventory, enter task you want to do: - add, - view, - buy - quit");
             String task = scanner.nextLine();
+            
+            if(task.equals("quit")) {
+              
+              break;
+              
+            }
             json.put("task", task);
             
             if(!task.equals("view")) {
@@ -123,6 +131,8 @@ class SockClient {
             
             break;
             
+          default:
+            break;
         }
         if(!requesting) {
           continue;
@@ -142,7 +152,7 @@ class SockClient {
         if (res.getBoolean("ok")){
           if (res.getString("type").equals("echo")) {
             System.out.println(res.getString("echo"));
-          } else {
+          } else if(res.has("result")){
             System.out.println(res.getInt("result"));
           }
         } else {
