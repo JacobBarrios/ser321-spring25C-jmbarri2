@@ -21,7 +21,10 @@ task Server(type: JavaExec) {
   classpath = sourceSets.main.runtimeClasspath
 
   main = 'SockServer'
-  args 8888
+  def defaultPort = '8888'
+  def port = project.hasProperty('port') ? project.port : defaultPort
+
+  args port
 }
 
 task Client(type: JavaExec) {
@@ -32,6 +35,11 @@ task Client(type: JavaExec) {
   classpath = sourceSets.main.runtimeClasspath
 
   main = 'SockClient'
-  args "localhost"
-  args 8888
+  def defaultHost = 'localhost'
+  def defaultPort = '8888'
+
+  def host = project.hasProperty('host') ? project.host : defaultHost
+  def port = project.hasProperty('port') ? project.port : defaultPort
+
+  args host, port
 }
