@@ -1,4 +1,0 @@
-0Echo request: {"data":"whooooo","type":"echo"}
-	1Echo request: {"data1":"whooooo","type":"echo"}
-	)Echo request: {"data":33,"type":"echo"}
-	+Echo request: {"data":true,"type":"echo"}
