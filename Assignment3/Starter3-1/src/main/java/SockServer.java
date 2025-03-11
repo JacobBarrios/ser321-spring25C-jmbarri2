@@ -201,7 +201,7 @@ public class SockServer {
         
       }
       
-      if(!(req.get("quantity").getClass().getName().equals("java.lang.Integer"))) {
+      if(!(req.get("quantity") instanceof Integer)) {
         res.put("ok", false);
         res.put("message", "Field quantity needs to be of type: int");
         
@@ -254,7 +254,7 @@ public class SockServer {
         
       }
       
-      if(!(req.get("quantity").getClass().getName().equals("java.lang.Integer"))) {
+      if(!(req.get("quantity") instanceof Integer)) {
         res.put("ok", false);
         res.put("message", "Field quantity needs to be of type: int");
         
