@@ -84,7 +84,6 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 		frame.add(outputPanel, c);
 
 		picPanel.newGame(1);
-		insertImage("img/Colosseum1.png", 0, 0);
 
 		open(); // opening server connection here
 		currentMess = "{'type': 'start'}"; // very initial start message for the connection
@@ -93,15 +92,16 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		String string = this.bufferedReader.readLine();
-		System.out.println("Got a connection to server");
-		JSONObject json = new JSONObject(string);
-		outputPanel.appendOutput(json.getString("value")); // putting the message in the outputpanel
+		
+		String stringResposne = this.bufferedReader.readLine();
+		System.out.println("[DEBUG] Got a connection");
+		JSONObject response = new JSONObject(stringResposne);
+		outputPanel.appendOutput(response.getString("value")); // putting the message in the outputpanel
 
 		// reading out the image (abstracted here as just a string)
-		System.out.println("Pretend I got an image: " + json.getString("image"));
-		/// would put image in picture panel
+		System.out.println("[DEBUG] I got an image: " + response.getString("image"));
+		// would put image in picture panel
+		insertImage(response.getString("image"), 0, 0);
 		close(); //closing the connection to server
 
 		// Now Client interaction only happens when the submit button is used, see "submitClicked()" method

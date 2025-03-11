@@ -50,11 +50,11 @@ public class SockServer {
 
 				if (json.getString("type").equals("start")){
 					
-					System.out.println("- Got a start");
+					System.out.println("[DEBUG] got a start");
 				
 					response.put("type","hello" );
 					response.put("value","Hello, please tell me your name." );
-					sendImg("img/hi.png", response); // calling a method that will manipulate the image and will make it send ready
+					response = sendImg("img/hi.png", response); // calling a method that will manipulate the image and will make it send ready
 					
 				}
 				else {
@@ -77,7 +77,7 @@ public class SockServer {
 			// import image
 			// I did not use the Advanced Custom protocol
 			// I read in the image and translated it into basically into a string and send it back to the client where I then decoded again
-			obj.put("image", "Pretend I am this image: " + filename);
+			obj.put("image", filename);
 		} 
 		return obj;
 	}
