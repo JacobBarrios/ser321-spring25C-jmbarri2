@@ -20,6 +20,7 @@ import org.json.*;
 public class SockServer {
 	static Stack<String> imageSource = new Stack<String>();
 	static int port;
+	static int rounds;
 	
 	public static void main (String args[]) {
 		Socket sock;
@@ -39,40 +40,109 @@ public class SockServer {
 			while(true) {
 				sock = serv.accept(); // blocking wait
 
-				// could totally use other input outpur streams here
+				// could totally use other input output streams here
 				ObjectInputStream in = new ObjectInputStream(sock.getInputStream());
-				OutputStream out = sock.getOutputStream();
-
+				ObjectOutputStream out = new ObjectOutputStream(sock.getOutputStream());
+				
 				String s = (String) in.readObject();
-				JSONObject json = new JSONObject(s); // the requests that is received
-
+				JSONObject request = new JSONObject(s); // the requests that is received
+				System.out.println("[DEBUG] Request received");
+				
 				JSONObject response = new JSONObject();
-
-				if (json.getString("type").equals("start")){
-					
+				
+				if (request.getString("type").equals("start")){
 					System.out.println("[DEBUG] got a start");
 				
-					response.put("type","hello" );
-					response.put("value","Hello, please tell me your name." );
+					response.put("type","hello");
+					response.put("value","Hello, please tell me your name.");
 					response = sendImg("img/hi.png", response); // calling a method that will manipulate the image and will make it send ready
+					
+				}
+				else if(request.getString("type").equals("name")) {
+					name = request.getString("name");
+					
+					response.put("type", "menu");
+					response.put("value", "Hello, " + name + "!\n" +
+							"What would you like to do: start, leaderboard, or quit");
+					
+					System.out.println("[DEBUG] Sent menu");
+					
+					
+				}
+				else if(request.getString("type").equals("selection")) {
+					String selection = request.getString("selection");
+					
+					boolean selecting = true;
+					while(selecting) {
+						switch(selection) {
+							case "start":
+								response.put("task", "rounds");
+								response.put("value", "Please enter the number of rounds the game should last");
+								
+								selecting = false;
+								break;
+								
+							case "leaderboard":
+								selecting = false;
+								break;
+								
+							default:
+								selecting = true;
+								
+							
+						}
+						
+					}
+					
+					
+				}
+				else if(request.getString("type").equals("rounds")) {
+					rounds = request.getInt("rounds");
+					System.out.println("[DEBUG] Number of rounds: " + rounds);
 					
 				}
 				else {
 					System.out.println("not sure what you meant");
-					response.put("type","error" );
-					response.put("message","unknown response" );
+					response.put("type","error");
+					response.put("message","unknown response");
 				}
-				PrintWriter outWrite = new PrintWriter(sock.getOutputStream(), true); // using a PrintWriter here, you could also use and ObjectOutputStream or anything you fancy
-				outWrite.println(response.toString());
+				
+				// Send response
+				out.writeObject(response.toString());
+				out.flush();
+				System.out.println("[DEBUG] Sent message");
 			}
 			
 		} catch(Exception e) {e.printStackTrace();}
+	}
+	
+	//TODO write description for method
+	public static String getRandomFile() {
+		String folderPath = "img/"; // Change this to your folder path
+		File folder = new File(folderPath);
+		
+		// Get list of image files
+		File[] files = folder.listFiles((dir, fileName) -> fileName.endsWith(".png") || fileName.endsWith(".jpg"));
+		
+		if (files == null || files.length == 0) {
+			System.out.println("No images found in the folder.");
+			return null;
+		}
+		
+		// Select a random file
+		Random random = new Random();
+		File randomImage = files[random.nextInt(files.length)];
+		
+		System.out.println("Selected Image: " + randomImage.getName());
+		
+		return randomImage.getName();
+		
 	}
 
 	/* TODO this is for you to implement, I just put a place holder here */
 	public static JSONObject sendImg(String filename, JSONObject obj) throws Exception {
 		File file = new File(filename);
-
+		System.out.println("[DEBUG] send image");
 		if (file.exists()) {
 			// import image
 			// I did not use the Advanced Custom protocol

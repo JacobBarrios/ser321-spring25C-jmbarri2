@@ -5,11 +5,7 @@ import java.awt.Dimension;
 import org.json.*;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -45,17 +41,21 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 	Socket sock;
 	OutputStream out;
 	ObjectOutputStream os;
+	ObjectInputStream in;
 	BufferedReader bufferedReader;
+	
+	JSONObject request;
+	JSONObject response;
 
 	// TODO: SHOULD NOT BE HARDCODED change to spec
-	String host = "localhost";
-	int port = 9000;
+	String host;
+	int port;
 
 	/**
 	 * Construct dialog
 	 * @throws IOException 
 	 */
-	public ClientGui(String host, int port) throws IOException {
+	public ClientGui(String host, int port) throws IOException, ClassNotFoundException {
 		this.host = host; 
 		this.port = port; 
 	
@@ -84,24 +84,28 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 		frame.add(outputPanel, c);
 
 		picPanel.newGame(1);
-
+		
 		open(); // opening server connection here
+		in = new ObjectInputStream(sock.getInputStream());
+		
 		currentMess = "{'type': 'start'}"; // very initial start message for the connection
 		try {
 			os.writeObject(currentMess);
+			System.out.println("[DEBUG] Send message");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		String stringResposne = this.bufferedReader.readLine();
-		System.out.println("[DEBUG] Got a connection");
-		JSONObject response = new JSONObject(stringResposne);
-		outputPanel.appendOutput(response.getString("value")); // putting the message in the outputpanel
+		String stringResponse = in.readObject().toString();
+		System.out.println("[DEBUG] Got a response");
+		request = new JSONObject(stringResponse);
+		outputPanel.appendOutput(request.getString("value")); // putting the message in the outputpanel
 
 		// reading out the image (abstracted here as just a string)
-		System.out.println("[DEBUG] I got an image: " + response.getString("image"));
+		System.out.println("[DEBUG] I got an image: " + request.getString("image"));
 		// would put image in picture panel
-		insertImage(response.getString("image"), 0, 0);
+		insertImage(request.getString("image"), 0, 0);
+		
 		close(); //closing the connection to server
 
 		// Now Client interaction only happens when the submit button is used, see "submitClicked()" method
@@ -164,35 +168,103 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 	@Override
 	public void submitClicked() {
 		try {
-		open(); // opening a server connection again
-		System.out.println("submit clicked ");
-
-		// Pulls the input box text
-		String input = outputPanel.getInputText();
-
-		// TODO evaluate the input from above and create a request for client. 
-
-		// send request to server
-		try {
-			  os.writeObject("Blub"); // this will crash the server, since it is not a JSON and thus the server will not handle it. 
+			open(); // opening a server connection again
+			in = new ObjectInputStream(sock.getInputStream());
+			System.out.println("submit clicked");
+		
+			// Pulls the input box text
+			String input = outputPanel.getInputText();
+			outputPanel.setInputText("");
+			System.out.println("[DEBUG] Input: " + input);
+			System.out.println("[DEBUG] Quitting?: " + input.equals("quit"));
+			
+			System.out.println(request.toString());
+			// TODO evaluate the input from above and create a request for client.
+			if(request.getString("type").equals("hello")) {
+				System.out.println("Got name: " + input);
+				response = new JSONObject();
+				
+				response.put("type", "name");
+				response.put("name", input);
+				
+			}
+			else if(request.getString("type").equals("rounds")) {
+				int rounds;
+				try {
+					rounds = Integer.parseInt(input);
+					if (rounds <= 0) {
+						throw new NumberFormatException(); // Treat non-positive numbers as invalid
+					}
+					System.out.println("[DEBUG] Is an integer");
+				}
+				catch (NumberFormatException e) {
+					System.out.println("[DEBUG] Not an integer");
+					outputPanel.appendOutput("Rounds must be an integer greater than 0, please try again");
+					return; // Input is not an integer
+				}
+				
+				System.out.println("[DEBUG] Got number of rounds: " + input);
+				
+				response.put("type", "rounds");
+				response.put("rounds", rounds);
+				
+			}
+			else if(input.equals("quit")) {
+				System.out.println("[DEBUG] Quiting");
+				
+				// Close everything
+				close();
+				
+				// Dispose the GUI and exit
+				
+				frame.dispose();
+				System.exit(0);
+				return;
+				
+			}
+			else if(request.getString("type").equals("menu")) {
+				System.out.println("[DEBUG] Got selection: " + input);
+				response = new JSONObject();
+				
+				response.put("type", "selection");
+				response.put("selection", input);
+			}
+			// send request to server
+			try {
+				os.writeObject(response.toString());
+				os.flush();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		
+			// wait for an answer and handle accordingly
+			try {
+				System.out.println("[DEBUG] Waiting on response");
+				String string = in.readObject().toString();
+				System.out.println("[DEBUG] Server request: " + string);
+				
+				request = new JSONObject(string.trim());
+				System.out.println("[DEBUG] Received response");
+				
+				outputPanel.appendOutput(request.getString("value"));
+				
+				if(request.has("image")) {
+					String image = request.getString("image");
+					
+					insertImage(image, 0, 0);
+					
+				}
 
-		// wait for an answer and handle accordingly
-		try {
-			System.out.println("Waiting on response");
-			String string = this.bufferedReader.readLine();
-			System.out.println(string);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 	}
 
 	/**
@@ -232,8 +304,8 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 		// create the frame
 		
 		try {
-			String host = "localhost";
-			int port = 8888;
+			String host = args[0];
+			int port = Integer.parseInt(args[1]);
 
 
 			ClientGui main = new ClientGui(host, port);
