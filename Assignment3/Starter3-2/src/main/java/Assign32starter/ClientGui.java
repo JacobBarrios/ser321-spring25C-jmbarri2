@@ -189,7 +189,19 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 				
 			}
 			else if(request.getString("type").equals("menu")) {
+				outputPanel.setPoints(0);
+				
 				System.out.println("[DEBUG] Got selection: " + input);
+				
+				if(input.equals("quit")) {
+					System.out.println("[DEBUG] Quiting");
+					
+					// Close everything
+					close();
+					frame.dispose();
+					return;
+					
+				}
 				
 				if(!(input.equals("start") || input.equals("leaderboard"))) {
 					outputPanel.appendOutput("Invalid Selection, please try again");
@@ -253,17 +265,6 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 				
 				System.out.println("[DEBUG] Guessing: " + input);
 			
-			}
-			else if(input.equals("quit")) {
-				System.out.println("[DEBUG] Quiting");
-				
-				// Close everything
-				close();
-				
-				frame.dispose();
-				System.exit(0);
-				return;
-				
 			}
 			// send request to server
 			try {
@@ -332,9 +333,11 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 	
 	public void close() {
         try {
-            if (out != null)  out.close();
-            if (bufferedReader != null)   bufferedReader.close(); 
-            if (sock != null) sock.close();
+			
+			if (out != null)  out.close();
+			if (os != null) os.close();
+			if (bufferedReader != null)   bufferedReader.close();
+			if (sock != null) sock.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

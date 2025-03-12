@@ -39,7 +39,9 @@ public class SockServer {
 			// placeholder for the person who wants to play a game
 			String name = "";
 			int points = 0;
-
+			rounds = 10;
+			leaderboard = new JSONArray();
+			
 			// read in one object, the message. we know a string was written only by knowing what the client sent.
 			// must cast the object from Object to desired type to be useful
 			while(true) {
@@ -88,8 +90,19 @@ public class SockServer {
 								break;
 								
 							case "leaderboard":
-								response.put("type", "rounds");
-								response.put("value", "");
+								response.put("type", "menu");
+								StringBuilder list = new StringBuilder("Leaderboard\n");
+								
+								if(!leaderboard.isEmpty()) {
+									for(int i = 0; i < leaderboard.length(); i++) {
+										JSONObject player = leaderboard.getJSONObject(i);
+										list.append(player.getString("name")).append(" ").append(player.getInt("total points")).append("\n");
+										
+									}
+								}
+								
+								list.append("What would you like to do: start, leaderboard, or quit");
+								response.put("value", list.toString());
 								
 								selecting = false;
 								break;
@@ -132,21 +145,35 @@ public class SockServer {
 					// Compare the guess to the actual file name
 					if (guess.equals(correctAnswer)) {
 						--rounds;
-						totalPoints += hints * 5 + 5;
+						totalPoints += 10 - hints;
 						
-						response.put("type", "playing");
-						response.put("value", "Correct!");
-						response.put("total points", totalPoints);
-						
-						file = getRandomFile();
-						correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
-						correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
-						correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
-						
-						System.out.println("[DEBUG] Chosen file: " + file);
-						String filePath = "img/" + file;
-						
-						response = sendImg(filePath, response);
+						if (rounds == 0) { // If no more rounds, send the menu
+							response.put("type", "menu");
+							response.put("total points", totalPoints);
+							response.put("value", "Game completed with " + totalPoints + " total points!\n" +
+									"What would you like to do: start, leaderboard, or quit");
+							
+							JSONObject player = new JSONObject();
+							player.put("name", name);
+							player.put("total points", totalPoints);
+							leaderboard.put(player);
+							totalPoints = 0;
+						}
+						else { // Otherwise, continue playing
+							response.put("type", "playing");
+							response.put("value", "Correct!");
+							response.put("total points", totalPoints);
+							
+							file = getRandomFile();
+							correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
+							correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
+							correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
+							
+							System.out.println("[DEBUG] Chosen file: " + file);
+							String filePath = "img/" + file;
+							
+							response = sendImg(filePath, response);
+						}
 					}
 					else {
 						response.put("type", "playing");
@@ -156,7 +183,7 @@ public class SockServer {
 				else if(request.getString("type").equals("next")) {
 					hints++;
 					// Construct the next image filename based on the hint number
-					String nextFileName = file + hints + ".png";
+					String nextFileName = correctAnswer + hints + ".png";
 					
 					// Create the full file path for the next image
 					String nextFilePath = "img/" + nextFileName;
@@ -192,18 +219,33 @@ public class SockServer {
 					hints = 1;
 					--rounds;
 					
-					response.put("type","playing");
-					response.put("value", "Starting game for " + rounds + " rounds");
-					
-					file = getRandomFile();
-					correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
-					correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
-					correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
-					
-					System.out.println("[DEBUG] Chosen file: " + file);
-					String filePath = "img/" + file;
-					
-					response = sendImg(filePath, response);
+					if (rounds == 0) { // If no more rounds, send the menu
+						response.put("type", "menu");
+						response.put("total points", totalPoints);
+						response.put("value", "Game completed with " + totalPoints + " total points!\n" +
+								"What would you like to do: start, leaderboard, or quit");
+						
+						JSONObject player = new JSONObject();
+						player.put("name", name);
+						player.put("total points", totalPoints);
+						leaderboard.put(player);
+						totalPoints = 0;
+					}
+					else { // Otherwise, continue playing
+						response.put("type", "playing");
+						response.put("value", "Correct!");
+						response.put("total points", totalPoints);
+						
+						file = getRandomFile();
+						correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
+						correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
+						correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
+						
+						System.out.println("[DEBUG] Chosen file: " + file);
+						String filePath = "img/" + file;
+						
+						response = sendImg(filePath, response);
+					}
 					
 				}
 				else if(request.getString("type").equals("remaining")) {
@@ -227,27 +269,12 @@ public class SockServer {
 				out.flush();
 				System.out.println("[DEBUG] Sent message");
 				
-				if(rounds == 0) {
-					JSONObject player = new JSONObject();
-					
-					player.put("name", name);
-					player.put("total points", totalPoints);
-					leaderboard.put(player);
-					
-					response.put("type", "menu");
-					response.put("value", "Game completed with " + totalPoints+ " total points!\n" +
-							"What would you like to do: start, leaderboard, or quit");
-					
-					System.out.println("[DEBUG] Sent menu");
-				}
-				
 				System.out.println("Total points: " + totalPoints);
 			}
 			
 		} catch(Exception e) {e.printStackTrace();}
 	}
 	
-	//TODO write description for method
 	public static String getRandomFile() {
 		String folderPath = "img/"; // Change this to your folder path
 		File folder = new File(folderPath);
