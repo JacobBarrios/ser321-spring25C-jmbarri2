@@ -48,6 +48,7 @@ given pictures.
 | `error`      | If something goes wrong (e.g., invalid input, server issues), an error message is returned. |
 
 ### 4. Video Demo
+https://youtu.be/XX6f7nf64lQ
 ### 5. Robustness Features
 The game client is designed with the following robustness features:
 
