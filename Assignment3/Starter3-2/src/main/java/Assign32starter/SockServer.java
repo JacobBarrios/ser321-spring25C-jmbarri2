@@ -233,7 +233,6 @@ public class SockServer {
 					}
 					else { // Otherwise, continue playing
 						response.put("type", "playing");
-						response.put("value", "Correct!");
 						response.put("total points", totalPoints);
 						
 						file = getRandomFile();
