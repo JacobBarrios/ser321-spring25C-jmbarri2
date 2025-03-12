@@ -21,6 +21,8 @@ public class SockServer {
 	static Stack<String> imageSource = new Stack<String>();
 	static int port;
 	static int rounds;
+	static int hints;
+	static String file;
 	
 	public static void main (String args[]) {
 		Socket sock;
@@ -51,6 +53,7 @@ public class SockServer {
 				JSONObject response = new JSONObject();
 				
 				if (request.getString("type").equals("start")){
+					hints = 1;
 					System.out.println("[DEBUG] got a start");
 				
 					response.put("type","hello");
@@ -76,7 +79,7 @@ public class SockServer {
 					while(selecting) {
 						switch(selection) {
 							case "start":
-								response.put("task", "rounds");
+								response.put("type", "rounds");
 								response.put("value", "Please enter the number of rounds the game should last");
 								
 								selecting = false;
@@ -100,6 +103,50 @@ public class SockServer {
 					rounds = request.getInt("rounds");
 					System.out.println("[DEBUG] Number of rounds: " + rounds);
 					
+					response.put("type","playing");
+					response.put("value", "Starting game for " + rounds + " rounds");
+					
+					file = getRandomFile();
+					System.out.println("[DEBUG] Chosen file: " + file);
+					String filePath = "img/" + file;
+					
+					response = sendImg(filePath, response);
+					
+				}
+				else if(request.getString("type").equals("guess")) {
+					String guess = request.getString("guess"); // Get the client's guess
+					
+					// Strip any extension (if necessary)
+					String actualFileName = file.substring(0, file.lastIndexOf('.')); // Remove the file extension
+					
+					// Compare the guess to the actual file name
+					if (guess.equalsIgnoreCase(actualFileName)) {
+						response.put("type", "answer");
+						response.put("value", "Correct!");
+					}
+					else {
+						response.put("type", "answer");
+						response.put("value", "Incorrect, Please try again!");
+					}
+				}
+				else if(request.getString("type").equals("next")) {
+					hints++;
+					// Construct the next image filename based on the hint number
+					String nextFileName = "GrandCanyon" + hints + ".png";
+					
+					// Create the full file path for the next image
+					String nextFilePath = "img/" + nextFileName;
+					
+					// Check if the next image exists
+					File nextImage = new File(nextFilePath);
+					if (nextImage.exists()) {
+						// Set the next image as the file to send
+						file = nextFileName; // Update the file variable with the next image name
+						response.put("type", "playing");
+						response.put("value", "Hint number " + hints);
+						response = sendImg(nextFilePath, response); // Send the next image
+						
+					}
 				}
 				else {
 					System.out.println("not sure what you meant");
@@ -122,7 +169,7 @@ public class SockServer {
 		File folder = new File(folderPath);
 		
 		// Get list of image files
-		File[] files = folder.listFiles((dir, fileName) -> fileName.endsWith(".png") || fileName.endsWith(".jpg"));
+		File[] files = folder.listFiles((dir, fileName) -> (fileName.endsWith("1.png")));
 		
 		if (files == null || files.length == 0) {
 			System.out.println("No images found in the folder.");
@@ -133,13 +180,12 @@ public class SockServer {
 		Random random = new Random();
 		File randomImage = files[random.nextInt(files.length)];
 		
-		System.out.println("Selected Image: " + randomImage.getName());
+		System.out.println("[DEBUG] Selected Image: " + randomImage.getName());
 		
 		return randomImage.getName();
 		
 	}
 
-	/* TODO this is for you to implement, I just put a place holder here */
 	public static JSONObject sendImg(String filename, JSONObject obj) throws Exception {
 		File file = new File(filename);
 		System.out.println("[DEBUG] send image");

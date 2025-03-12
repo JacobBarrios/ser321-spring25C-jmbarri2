@@ -174,40 +174,89 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 		
 			// Pulls the input box text
 			String input = outputPanel.getInputText();
+			
+			// TODO evaluate the input from above and create a request for client.
+			
 			outputPanel.setInputText("");
 			System.out.println("[DEBUG] Input: " + input);
 			System.out.println("[DEBUG] Quitting?: " + input.equals("quit"));
 			
 			System.out.println(request.toString());
-			// TODO evaluate the input from above and create a request for client.
+			
 			if(request.getString("type").equals("hello")) {
 				System.out.println("Got name: " + input);
+				
 				response = new JSONObject();
 				
 				response.put("type", "name");
 				response.put("name", input);
 				
 			}
+			else if(request.getString("type").equals("menu")) {
+				System.out.println("[DEBUG] Got selection: " + input);
+				
+				if(!(input.equals("start") || input.equals("leaderboard"))) {
+					outputPanel.appendOutput("Invalid Selection, please try again");
+					
+					close();
+					return;
+				}
+				
+				response = new JSONObject();
+				
+				response.put("type", "selection");
+				response.put("selection", input);
+			}
 			else if(request.getString("type").equals("rounds")) {
 				int rounds;
+				
 				try {
 					rounds = Integer.parseInt(input);
 					if (rounds <= 0) {
 						throw new NumberFormatException(); // Treat non-positive numbers as invalid
 					}
+					
 					System.out.println("[DEBUG] Is an integer");
+					
 				}
 				catch (NumberFormatException e) {
 					System.out.println("[DEBUG] Not an integer");
 					outputPanel.appendOutput("Rounds must be an integer greater than 0, please try again");
+					
+					close();
 					return; // Input is not an integer
 				}
 				
 				System.out.println("[DEBUG] Got number of rounds: " + input);
 				
+				response = new JSONObject();
+				
 				response.put("type", "rounds");
 				response.put("rounds", rounds);
 				
+			}
+			else if(input.equals("next")) {
+				response.put("type", "next");
+				
+			}
+			else if(input.equals("remaining")) {
+				response.put("type", "remaining");
+				
+			}
+			else if(input.equals("skip")) {
+				response.put("type", "skip");
+				
+			}
+			else if(request.getString("type").equals("playing") || request.getString("type").equals("answer")) {
+				System.out.println("[DEBUG] Guessing");
+				
+				response = new JSONObject();
+				
+				response.put("type", "guess");
+				response.put("guess", input);
+				
+				System.out.println("[DEBUG] Guessing: " + input);
+			
 			}
 			else if(input.equals("quit")) {
 				System.out.println("[DEBUG] Quiting");
@@ -215,19 +264,10 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 				// Close everything
 				close();
 				
-				// Dispose the GUI and exit
-				
 				frame.dispose();
 				System.exit(0);
 				return;
 				
-			}
-			else if(request.getString("type").equals("menu")) {
-				System.out.println("[DEBUG] Got selection: " + input);
-				response = new JSONObject();
-				
-				response.put("type", "selection");
-				response.put("selection", input);
 			}
 			// send request to server
 			try {
@@ -247,8 +287,10 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 				request = new JSONObject(string.trim());
 				System.out.println("[DEBUG] Received response");
 				
-				outputPanel.appendOutput(request.getString("value"));
-				
+				if(request.has("value")) {
+					outputPanel.appendOutput(request.getString("value"));
+					
+				}
 				if(request.has("image")) {
 					String image = request.getString("image");
 					
