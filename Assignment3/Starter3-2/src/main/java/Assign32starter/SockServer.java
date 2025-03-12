@@ -23,6 +23,9 @@ public class SockServer {
 	static int rounds;
 	static int hints;
 	static String file;
+	static int totalPoints;
+	static String correctAnswer;
+	static JSONArray leaderboard;
 	
 	public static void main (String args[]) {
 		Socket sock;
@@ -31,13 +34,13 @@ public class SockServer {
 			
 			//opening the socket here, just hard coded since this is just a bas example
 			ServerSocket serv = new ServerSocket(port);
-			System.out.println("Server ready for connetion");
+			System.out.println("Server ready for connection");
 
 			// placeholder for the person who wants to play a game
 			String name = "";
 			int points = 0;
 
-			// read in one object, the message. we know a string was written only by knowing what the client sent. 
+			// read in one object, the message. we know a string was written only by knowing what the client sent.
 			// must cast the object from Object to desired type to be useful
 			while(true) {
 				sock = serv.accept(); // blocking wait
@@ -70,7 +73,6 @@ public class SockServer {
 					
 					System.out.println("[DEBUG] Sent menu");
 					
-					
 				}
 				else if(request.getString("type").equals("selection")) {
 					String selection = request.getString("selection");
@@ -86,6 +88,9 @@ public class SockServer {
 								break;
 								
 							case "leaderboard":
+								response.put("type", "rounds");
+								response.put("value", "");
+								
 								selecting = false;
 								break;
 								
@@ -107,6 +112,11 @@ public class SockServer {
 					response.put("value", "Starting game for " + rounds + " rounds");
 					
 					file = getRandomFile();
+					correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
+					correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
+					correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
+					
+					System.out.println("[DEBUG] Correct answer: " + correctAnswer);
 					System.out.println("[DEBUG] Chosen file: " + file);
 					String filePath = "img/" + file;
 					
@@ -114,25 +124,39 @@ public class SockServer {
 					
 				}
 				else if(request.getString("type").equals("guess")) {
-					String guess = request.getString("guess"); // Get the client's guess
+					String guess = request.getString("guess");
 					
-					// Strip any extension (if necessary)
-					String actualFileName = file.substring(0, file.lastIndexOf('.')); // Remove the file extension
+					// Strip any spaces from the guess and the actual file name
+					guess = guess.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
 					
 					// Compare the guess to the actual file name
-					if (guess.equalsIgnoreCase(actualFileName)) {
-						response.put("type", "answer");
+					if (guess.equals(correctAnswer)) {
+						--rounds;
+						totalPoints += hints * 5 + 5;
+						
+						response.put("type", "playing");
 						response.put("value", "Correct!");
+						response.put("total points", totalPoints);
+						
+						file = getRandomFile();
+						correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
+						correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
+						correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
+						
+						System.out.println("[DEBUG] Chosen file: " + file);
+						String filePath = "img/" + file;
+						
+						response = sendImg(filePath, response);
 					}
 					else {
-						response.put("type", "answer");
+						response.put("type", "playing");
 						response.put("value", "Incorrect, Please try again!");
 					}
 				}
 				else if(request.getString("type").equals("next")) {
 					hints++;
 					// Construct the next image filename based on the hint number
-					String nextFileName = "GrandCanyon" + hints + ".png";
+					String nextFileName = file + hints + ".png";
 					
 					// Create the full file path for the next image
 					String nextFilePath = "img/" + nextFileName;
@@ -147,6 +171,50 @@ public class SockServer {
 						response = sendImg(nextFilePath, response); // Send the next image
 						
 					}
+					else {
+						hints = 1;
+						rounds -= 1;
+						
+						response.put("type", "playing");
+						
+						file = getRandomFile();
+						correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
+						correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
+						correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
+						
+						System.out.println("[DEBUG] Chosen file: " + file);
+						String filePath = "img/" + file;
+						
+						response = sendImg(filePath, response);
+					}
+				}
+				else if(request.getString("type").equals("skip")) {
+					hints = 1;
+					--rounds;
+					
+					response.put("type","playing");
+					response.put("value", "Starting game for " + rounds + " rounds");
+					
+					file = getRandomFile();
+					correctAnswer = file.substring(0, file.lastIndexOf('.')); // Remove file extension
+					correctAnswer = correctAnswer.replaceAll("\\s+", "").toLowerCase(); // Remove spaces and convert to lowercase
+					correctAnswer = correctAnswer.replaceAll("\\d+$", ""); // Remove trailing digits (number suffix)
+					
+					System.out.println("[DEBUG] Chosen file: " + file);
+					String filePath = "img/" + file;
+					
+					response = sendImg(filePath, response);
+					
+				}
+				else if(request.getString("type").equals("remaining")) {
+					if(hints != 4) {
+						response.put("type", "playing");
+						response.put("value", 4 - hints + " hint(s) remaining");
+					}
+					else {
+						response.put("type", "playing");
+						response.put("value", "No hints remaining!");
+					}
 				}
 				else {
 					System.out.println("not sure what you meant");
@@ -158,6 +226,22 @@ public class SockServer {
 				out.writeObject(response.toString());
 				out.flush();
 				System.out.println("[DEBUG] Sent message");
+				
+				if(rounds == 0) {
+					JSONObject player = new JSONObject();
+					
+					player.put("name", name);
+					player.put("total points", totalPoints);
+					leaderboard.put(player);
+					
+					response.put("type", "menu");
+					response.put("value", "Game completed with " + totalPoints+ " total points!\n" +
+							"What would you like to do: start, leaderboard, or quit");
+					
+					System.out.println("[DEBUG] Sent menu");
+				}
+				
+				System.out.println("Total points: " + totalPoints);
 			}
 			
 		} catch(Exception e) {e.printStackTrace();}
@@ -194,7 +278,7 @@ public class SockServer {
 			// I did not use the Advanced Custom protocol
 			// I read in the image and translated it into basically into a string and send it back to the client where I then decoded again
 			obj.put("image", filename);
-		} 
+		}
 		return obj;
 	}
 }

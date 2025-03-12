@@ -47,7 +47,6 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 	JSONObject request;
 	JSONObject response;
 
-	// TODO: SHOULD NOT BE HARDCODED change to spec
 	String host;
 	int port;
 
@@ -161,8 +160,7 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 
 	/**
 	 * Submit button handling
-	 * 
-	 * TODO: This is where your logic will go or where you will call appropriate methods you write. 
+	 *
 	 * Right now this method opens and closes the connection after every interaction, if you want to keep that or not is up to you. 
 	 */
 	@Override
@@ -174,8 +172,6 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 		
 			// Pulls the input box text
 			String input = outputPanel.getInputText();
-			
-			// TODO evaluate the input from above and create a request for client.
 			
 			outputPanel.setInputText("");
 			System.out.println("[DEBUG] Input: " + input);
@@ -247,7 +243,7 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 				response.put("type", "skip");
 				
 			}
-			else if(request.getString("type").equals("playing") || request.getString("type").equals("answer")) {
+			else if(request.getString("type").equals("playing")) {
 				System.out.println("[DEBUG] Guessing");
 				
 				response = new JSONObject();
@@ -274,7 +270,6 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 				os.writeObject(response.toString());
 				os.flush();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		
@@ -291,6 +286,10 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 					outputPanel.appendOutput(request.getString("value"));
 					
 				}
+				if(request.has("total points")) {
+					outputPanel.setPoints(request.getInt("total points"));
+					
+				}
 				if(request.has("image")) {
 					String image = request.getString("image");
 					
@@ -303,7 +302,6 @@ public class ClientGui implements Assign32starter.OutputPanel.EventHandlers {
 			}
 			close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
